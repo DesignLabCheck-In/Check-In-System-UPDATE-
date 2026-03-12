@@ -481,25 +481,27 @@ button:hover {
 
 .admin-toast {
   position: fixed;
-  right: 24px;
-  bottom: 24px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, calc(-50% + 10px));
   background: #eaf7ee;
   color: #1d6b31;
   border: 1px solid #b9e2c5;
   border-radius: 14px;
-  padding: 14px 18px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  padding: 16px 22px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
   opacity: 0;
-  transform: translateY(10px);
   pointer-events: none;
   transition: opacity 0.22s ease, transform 0.22s ease;
-  z-index: 2000;
-  max-width: 340px;
+  z-index: 3000;
+  max-width: 420px;
+  width: max-content;
+  text-align: center;
 }
 
 .admin-toast.show {
   opacity: 1;
-  transform: translateY(0);
+  transform: translate(-50%, -50%);
 }
 
 .admin-toast.error {
@@ -510,9 +512,7 @@ button:hover {
 
 @media (max-width: 600px) {
   .admin-toast {
-    left: 16px;
-    right: 16px;
-    bottom: 16px;
+    width: calc(100vw - 32px);
     max-width: none;
   }
 }
