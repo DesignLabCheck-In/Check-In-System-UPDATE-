@@ -1,3 +1,4 @@
+//Admin Page Logic
 async function loadPeople() {
   const res = await fetch('/admin/people');
   const people = await res.json();
