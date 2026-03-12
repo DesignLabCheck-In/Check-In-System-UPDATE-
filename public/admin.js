@@ -105,20 +105,23 @@ async function loadPeople() {
     btn.className = 'remove-btn';
 
     btn.addEventListener('click', async () => {
-      const removeResult = await fetchJson('/admin/people/' + p.id, {
-        method: 'DELETE'
-      });
+  const confirmed = window.confirm(`Are you sure you want to eliminate ${p.name}?`);
+  if (!confirmed) return;
 
-      if (!removeResult) return;
+  const removeResult = await fetchJson('/admin/people/' + p.id, {
+    method: 'DELETE'
+  });
 
-      if (!removeResult.res.ok) {
-        showToast(removeResult.data.error || 'Could not remove person.', true);
-        return;
-      }
+  if (!removeResult) return;
 
-      await loadPeople();
-      showToast('Person removed.');
-    });
+  if (!removeResult.res.ok) {
+    showToast(removeResult.data.error || 'Could not remove person.', true);
+    return;
+  }
+
+  await loadPeople();
+  showToast(`${p.name} was removed.`);
+});
 
     li.appendChild(nameSpan);
     li.appendChild(btn);
