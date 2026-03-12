@@ -1,0 +1,144 @@
+@font-face {
+  font-family: 'UniverseBoldCondensed';
+  src: url('fonts/universe-bold-condensed.woff2') format('woff2'),
+       url('fonts/universe-bold-condensed.woff') format('woff');
+  font-weight: bold;
+  font-style: normal;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: 'UniverseBoldCondensed', sans-serif;
+  background: white;
+  height: 100%;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4vw;
+  flex-wrap: wrap;
+  margin-bottom: 3vh;
+  padding: 0 2vw;
+  text-align: left;
+}
+
+.title h1 {
+  font-size: clamp(1.5rem, 4vw, 3.5rem);
+  color: #2eaf4a;
+  margin: 0;
+  line-height: 1.1;
+}
+
+.logo { max-height: 20vh; width: auto; }
+
+.checkin-form {
+  display: flex;
+  align-items: center;
+  gap: 1vw;
+  flex-wrap: wrap;
+  justify-content: center;
+  width: 100%;
+  max-width: 600px;
+  padding: 0 2vw;
+}
+
+select {
+  flex: 1;
+  min-width: 250px;
+  font-size: 1rem;
+  padding: 0.6em 2.2em 0.6em 1em;
+  border-radius: 9999px;
+  border: 1px solid #ccc;
+  appearance: none;
+  background-color: white;
+  background-image: url('data:image/svg+xml;utf8,<svg fill="black" height="16" viewBox="0 0 24 24" width="16" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
+  background-repeat: no-repeat;
+  background-position: right 1.2em center;
+  background-size: 1em;
+}
+
+button {
+  padding: 0.6em 1.5em;
+  font-size: 0.9rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 9999px;
+  background-color: #2eaf4a;
+  color: white;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-gray { background-color: #aaa; }
+
+/* Inverse style for Check-Out: white bg, green outline/text */
+.btn-outline-green {
+  background: #ffffff;
+  color: #2eaf4a;
+  border: 2px solid #2eaf4a;
+}
+.btn-outline-green:hover { background: #f5fff9; }
+
+.admin-btn {
+  position: absolute;
+  top: 1em;
+  right: 1em;
+  background-color: #444;
+  color: white;
+  border: none;
+  padding: 0.5em 1em;
+  border-radius: 9999px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  z-index: 10;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  font-family: 'UniverseBoldCondensed', sans-serif;
+}
+
+.modal-box {
+  background: white;
+  padding: 2em;
+  border-radius: 12px;
+  text-align: center;
+  max-width: 90%;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.modal-input {
+  width: 100%;
+  padding: 0.5em;
+  font-size: 1rem;
+  margin-top: 1em;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+@media (max-width: 600px) {
+  .title { flex-direction: column; align-items: center; text-align: center; }
+  .checkin-form { flex-direction: column; gap: 1em; }
+}
