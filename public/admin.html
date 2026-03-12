@@ -1,23 +1,29 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin Panel</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css" />
 </head>
-<body>
+<body class="admin-page">
+  <div class="admin-container">
+    <h1>Admin Panel</h1>
 
-<h1>Admin Panel</h1>
+    <section class="admin-card">
+      <h2>Add Person</h2>
+      <div class="admin-add-row">
+        <input id="new-name" class="admin-input" placeholder="Full name" />
+        <button id="add-person" type="button">Add</button>
+      </div>
+    </section>
 
-<h2>Add Person</h2>
+    <section class="admin-card">
+      <h2>Current People</h2>
+      <ul id="people-list" class="people-list"></ul>
+    </section>
+  </div>
 
-<input id="new-name" placeholder="Full name"/>
-<button id="add-person">Add</button>
-
-<h2>Current People</h2>
-
-<ul id="people-list"></ul>
-
-<script src="admin.js"></script>
-
+  <script src="admin.js"></script>
 </body>
 </html>
