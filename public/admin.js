@@ -96,7 +96,7 @@ function renderShiftGroups(shifts) {
   const container = document.getElementById('shift-groups');
   container.innerHTML = '';
 
-  for (let weekday = 1; weekday <= 7; weekday += 1) {
+  for (let weekday = 1; weekday <= 5; weekday += 1) {
     const dayCard = document.createElement('div');
     dayCard.className = 'shift-day-card';
 
