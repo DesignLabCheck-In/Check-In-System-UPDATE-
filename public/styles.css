@@ -30,7 +30,7 @@ body {
 
 .title h1 {
   font-size: clamp(1.5rem, 4vw, 3.5rem);
-  color: #111;
+  color: #2eaf4a;
   margin: 0;
   line-height: 1.1;
 }
@@ -41,14 +41,29 @@ body {
 }
 
 .checkin-form {
-  display: flex;
-  align-items: center;
-  gap: 1vw;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(250px, 340px) minmax(250px, 340px);
+  gap: 16px 18px;
   justify-content: center;
   width: 100%;
-  max-width: 900px;
+  max-width: 760px;
   padding: 0 2vw;
+}
+
+#checkin-btn,
+#checkout-btn {
+  justify-self: center;
+  min-width: 160px;
+}
+
+#checkin-btn {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+#checkout-btn {
+  grid-column: 2;
+  grid-row: 2;
 }
 
 select,
