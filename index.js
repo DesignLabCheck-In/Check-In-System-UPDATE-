@@ -4,6 +4,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const nodemailer = require('nodemailer');
 const path = require('path');
+const crypto = require('crypto');
 const { DateTime } = require('luxon');
 const { Pool } = require('pg');
 
@@ -21,12 +22,14 @@ app.get('/', (_req, res) => res.sendFile(path.join(STATIC_DIR, 'index.html')));
 const EMAIL_TO =
   'p.vuckovic@student.utwente.nl, a.krstovska@student.utwente.nl, n.j.wright@utwente.nl';
 
-// Extra email only for TT late check-ins
 const EXTRA_TT_LATE_EMAIL = 'j.blok@utwente.nl';
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
-  auth: { user: process.env.MAIL_USER, pass: process.env.MAIL_PASS }
+  auth: {
+    user: process.env.MAIL_USER,
+    pass: process.env.MAIL_PASS
+  }
 });
 
 transporter.verify(err => {
@@ -43,11 +46,11 @@ const pool = new Pool({
 async function dbInit() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS checkins (
-      id     SERIAL PRIMARY KEY,
-      name   TEXT NOT NULL,
-      team   TEXT NOT NULL,
+      id SERIAL PRIMARY KEY,
+      name TEXT NOT NULL,
+      team TEXT NOT NULL,
       status TEXT NOT NULL,
-      at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
   `);
 
@@ -76,9 +79,41 @@ dbInit().catch(err => {
   process.exit(1);
 });
 
+// ---------- Admin session ----------
+const adminSessions = new Map();
+const ADMIN_COOKIE_NAME = 'designlab_admin_session';
+
+function parseCookies(req) {
+  const header = req.headers.cookie || '';
+  return Object.fromEntries(
+    header
+      .split(';')
+      .map(part => part.trim())
+      .filter(Boolean)
+      .map(part => {
+        const eqIndex = part.indexOf('=');
+        if (eqIndex === -1) return [part, ''];
+        return [part.slice(0, eqIndex), decodeURIComponent(part.slice(eqIndex + 1))];
+      })
+  );
+}
+
+function isAdminAuthenticated(req) {
+  const cookies = parseCookies(req);
+  const token = cookies[ADMIN_COOKIE_NAME];
+  return token && adminSessions.has(token);
+}
+
+function requireAdmin(req, res, next) {
+  if (!isAdminAuthenticated(req)) {
+    return res.status(401).json({ error: 'Admin login required' });
+  }
+  next();
+}
+
 // ---------- Shift helpers ----------
 function getShiftStart(now, team) {
-  const weekday = now.weekday; // 1 = Mon ... 7 = Sun
+  const weekday = now.weekday; // 1=Mon ... 7=Sun
 
   if (team === 'DT') {
     return now.hour < 12
@@ -95,7 +130,7 @@ function getShiftStart(now, team) {
   return now;
 }
 
-// ---------- API ----------
+// ---------- Auth routes ----------
 app.post('/access/login', (req, res) => {
   const { password } = req.body || {};
 
@@ -109,15 +144,66 @@ app.post('/access/login', (req, res) => {
 
   res.json({ success: true });
 });
-// Names list (dropdown) - now loaded from Neon
+
+app.post('/admin/login', (req, res) => {
+  const { password } = req.body || {};
+
+  if (!process.env.ADMIN_PASSWORD) {
+    return res.status(500).json({ error: 'ADMIN_PASSWORD is not configured' });
+  }
+
+  if (password !== process.env.ADMIN_PASSWORD) {
+    return res.status(401).json({ error: 'Invalid admin password' });
+  }
+
+  const token = crypto.randomBytes(24).toString('hex');
+  adminSessions.set(token, { createdAt: Date.now() });
+
+  res.setHeader(
+    'Set-Cookie',
+    `${ADMIN_COOKIE_NAME}=${token}; HttpOnly; Path=/; SameSite=Lax`
+  );
+
+  res.json({ success: true });
+});
+
+app.post('/admin/logout', (req, res) => {
+  const cookies = parseCookies(req);
+  const token = cookies[ADMIN_COOKIE_NAME];
+
+  if (token) adminSessions.delete(token);
+
+  res.setHeader(
+    'Set-Cookie',
+    `${ADMIN_COOKIE_NAME}=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax`
+  );
+
+  res.json({ success: true });
+});
+
+app.get('/admin/session', (req, res) => {
+  res.json({ authenticated: !!isAdminAuthenticated(req) });
+});
+
+app.get('/admin.html', (req, res) => {
+  if (!isAdminAuthenticated(req)) {
+    return res.redirect('/');
+  }
+
+  res.sendFile(path.join(STATIC_DIR, 'admin.html'));
+});
+
+// ---------- API ----------
+
+// Public names list
 app.get('/names', async (_req, res) => {
   try {
-    const { rows } = await pool.query(
-      `SELECT name
-       FROM people
-       WHERE active = TRUE
-       ORDER BY name ASC`
-    );
+    const { rows } = await pool.query(`
+      SELECT name
+      FROM people
+      WHERE active = TRUE
+      ORDER BY name ASC
+    `);
 
     res.json(rows.map(row => row.name));
   } catch (e) {
@@ -130,7 +216,9 @@ app.get('/names', async (_req, res) => {
 app.post('/checkin', async (req, res) => {
   try {
     const { name, team } = req.body;
-    if (!name || !team) return res.status(400).json({ error: 'Missing name or team' });
+    if (!name || !team) {
+      return res.status(400).json({ error: 'Missing name or team' });
+    }
 
     const now = DateTime.now().setZone('Europe/Amsterdam');
     const isWeekend = now.weekday >= 6;
@@ -155,7 +243,7 @@ app.post('/checkin', async (req, res) => {
     }
 
     await pool.query(
-      'INSERT INTO checkins(name, team, status, at) VALUES ($1,$2,$3,$4)',
+      'INSERT INTO checkins(name, team, status, at) VALUES ($1, $2, $3, $4)',
       [name, team, status, now.toISO()]
     );
 
@@ -197,13 +285,15 @@ app.post('/checkin', async (req, res) => {
 app.post('/checkout', async (req, res) => {
   try {
     const { name, team } = req.body;
-    if (!name || !team) return res.status(400).json({ error: 'Missing name or team' });
+    if (!name || !team) {
+      return res.status(400).json({ error: 'Missing name or team' });
+    }
 
     const now = DateTime.now().setZone('Europe/Amsterdam');
     const localTime = now.toFormat('HH:mm');
 
     await pool.query(
-      'INSERT INTO checkins(name, team, status, at) VALUES ($1,$2,$3,$4)',
+      'INSERT INTO checkins(name, team, status, at) VALUES ($1, $2, $3, $4)',
       [name, team, 'checkout', now.toISO()]
     );
 
@@ -223,17 +313,62 @@ app.post('/checkout', async (req, res) => {
   }
 });
 
-// ADMIN: Download CSV log
-app.get('/download-log', async (req, res) => {
-  const auth = req.headers.authorization || '';
-  const [scheme, encoded] = auth.split(' ');
-  if (scheme !== 'Basic' || !encoded) return res.status(401).send('Missing authorization');
+// ---------- ADMIN API ----------
+app.get('/admin/people', requireAdmin, async (_req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT id, name, active FROM people ORDER BY name ASC'
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('admin people error:', err);
+    res.status(500).json({ error: 'DB error' });
+  }
+});
 
-  const [user, pass] = Buffer.from(encoded, 'base64').toString().split(':');
-  if (user !== 'admin' || pass !== process.env.ADMIN_PASSWORD) {
-    return res.status(403).send('Forbidden');
+app.post('/admin/people', requireAdmin, async (req, res) => {
+  const name = (req.body?.name || '').trim();
+
+  if (!name) {
+    return res.status(400).json({ error: 'Name required' });
   }
 
+  try {
+    await pool.query(
+      `
+      INSERT INTO people(name, active)
+      VALUES($1, TRUE)
+      ON CONFLICT (name)
+      DO UPDATE SET active = TRUE
+      `,
+      [name]
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('add person error:', err);
+    res.status(500).json({ error: 'Could not add person' });
+  }
+});
+
+app.delete('/admin/people/:id', requireAdmin, async (req, res) => {
+  const id = req.params.id;
+
+  try {
+    await pool.query(
+      'UPDATE people SET active = FALSE WHERE id = $1',
+      [id]
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('remove person error:', err);
+    res.status(500).json({ error: 'Could not remove person' });
+  }
+});
+
+// Protected CSV download
+app.get('/download-log', requireAdmin, async (_req, res) => {
   try {
     const { rows } = await pool.query(
       'SELECT name, at, team, status FROM checkins ORDER BY at DESC'
@@ -254,7 +389,7 @@ app.get('/download-log', async (req, res) => {
   }
 });
 
-// ---------- 20-minute reminder (multi-instance safe) ----------
+// ---------- 20-minute reminder ----------
 setInterval(async () => {
   try {
     const now = DateTime.now().setZone('Europe/Amsterdam');
@@ -267,11 +402,11 @@ setInterval(async () => {
       if (diffMins === 20) {
         const { rowCount } = await pool.query(
           `SELECT 1
-             FROM checkins
-            WHERE team = $1
-              AND status IN ('checkin-ontime','checkin-late','checkin-weekend')
-              AND at >= $2
-            LIMIT 1`,
+           FROM checkins
+           WHERE team = $1
+             AND status IN ('checkin-ontime', 'checkin-late', 'checkin-weekend')
+             AND at >= $2
+           LIMIT 1`,
           [team, shiftStart.toISO()]
         );
 
@@ -280,7 +415,7 @@ setInterval(async () => {
 
           try {
             await pool.query(
-              'INSERT INTO sent_reminders(team, shift_start_hour) VALUES ($1,$2)',
+              'INSERT INTO sent_reminders(team, shift_start_hour) VALUES ($1, $2)',
               [team, shiftHour]
             );
 
@@ -303,58 +438,7 @@ setInterval(async () => {
   }
 }, 60 * 1000);
 
-// ---------- ADMIN API ----------
-
-// get people list
-app.get('/admin/people', async (_req, res) => {
-  try {
-    const { rows } = await pool.query(
-      'SELECT id, name, active FROM people ORDER BY name ASC'
-    );
-    res.json(rows);
-  } catch (err) {
-    console.error('admin people error:', err);
-    res.status(500).json({ error: 'DB error' });
-  }
-});
-
-// add person
-app.post('/admin/people', async (req, res) => {
-  const { name } = req.body;
-
-  if (!name) return res.status(400).json({ error: 'Name required' });
-
-  try {
-    await pool.query(
-      'INSERT INTO people(name) VALUES($1)',
-      [name]
-    );
-
-    res.json({ success: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Could not add person' });
-  }
-});
-
-// deactivate person
-app.delete('/admin/people/:id', async (req, res) => {
-  const id = req.params.id;
-
-  try {
-    await pool.query(
-      'UPDATE people SET active = FALSE WHERE id=$1',
-      [id]
-    );
-
-    res.json({ success: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Could not remove person' });
-  }
-});
-
 // ---------- Start ----------
-app.listen(PORT, () =>
-  console.log(`🚀 Server running at http://localhost:${PORT}`)
-);
+app.listen(PORT, () => {
+  console.log(`🚀 Server running at http://localhost:${PORT}`);
+});
