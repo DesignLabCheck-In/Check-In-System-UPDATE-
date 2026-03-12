@@ -7,14 +7,19 @@ const WEEKDAY_NAMES = {
 };
 
 let activeTeam = 'DT';
+let toastTimer = null;
 
-function showAdminFeedback(message, isError = false) {
-  const box = document.getElementById('admin-feedback');
+function showToast(message, isError = false) {
+  const box = document.getElementById('admin-toast');
   if (!box) return;
 
   box.textContent = message;
-  box.style.display = 'block';
-  box.className = isError ? 'admin-feedback error' : 'admin-feedback';
+  box.className = isError ? 'admin-toast show error' : 'admin-toast show';
+
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    box.className = 'admin-toast';
+  }, 2600);
 }
 
 function redirectHome() {
@@ -61,6 +66,7 @@ async function loadSettings() {
   const settings = result.data;
   document.getElementById('early_checkin_minutes').value = settings.early_checkin_minutes ?? '';
   document.getElementById('late_grace_minutes').value = settings.late_grace_minutes ?? '';
+  document.getElementById('no_checkin_reminder_minutes').value = settings.no_checkin_reminder_minutes ?? '';
 }
 
 async function loadNotifications() {
@@ -106,12 +112,12 @@ async function loadPeople() {
       if (!removeResult) return;
 
       if (!removeResult.res.ok) {
-        showAdminFeedback(removeResult.data.error || 'Could not remove person.', true);
+        showToast(removeResult.data.error || 'Could not remove person.', true);
         return;
       }
 
       await loadPeople();
-      showAdminFeedback('Person removed.');
+      showToast('Person removed.');
     });
 
     li.appendChild(nameSpan);
@@ -189,12 +195,12 @@ function renderShiftGroups(shifts) {
           if (!result) return;
 
           if (!result.res.ok) {
-            showAdminFeedback(result.data.error || 'Could not update shift.', true);
+            showToast(result.data.error || 'Could not update shift.', true);
             return;
           }
 
           await loadShifts(activeTeam);
-          showAdminFeedback('Shift updated.');
+          showToast('Shift updated.');
         });
 
         deleteBtn.addEventListener('click', async () => {
@@ -208,12 +214,12 @@ function renderShiftGroups(shifts) {
           if (!result) return;
 
           if (!result.res.ok) {
-            showAdminFeedback(result.data.error || 'Could not delete shift.', true);
+            showToast(result.data.error || 'Could not delete shift.', true);
             return;
           }
 
           await loadShifts(activeTeam);
-          showAdminFeedback('Shift deleted.');
+          showToast('Shift deleted.');
         });
 
         row.appendChild(nameInput);
@@ -234,7 +240,7 @@ async function loadShifts(team) {
   if (!result) return;
 
   if (!result.res.ok) {
-    showAdminFeedback(result.data.error || 'Could not load shifts.', true);
+    showToast(result.data.error || 'Could not load shifts.', true);
     return;
   }
 
@@ -248,6 +254,17 @@ function setActiveTeam(team) {
   loadShifts(team);
 }
 
+function wireCollapsibles() {
+  document.querySelectorAll('.collapsible-card').forEach((card) => {
+    const toggle = card.querySelector('.collapse-toggle');
+    if (!toggle) return;
+
+    toggle.addEventListener('click', () => {
+      card.classList.toggle('open');
+    });
+  });
+}
+
 function wireEventHandlers() {
   document.getElementById('settings-form').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -257,18 +274,19 @@ function wireEventHandlers() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         early_checkin_minutes: document.getElementById('early_checkin_minutes').value,
-        late_grace_minutes: document.getElementById('late_grace_minutes').value
+        late_grace_minutes: document.getElementById('late_grace_minutes').value,
+        no_checkin_reminder_minutes: document.getElementById('no_checkin_reminder_minutes').value
       })
     });
 
     if (!result) return;
 
     if (!result.res.ok) {
-      showAdminFeedback(result.data.error || 'Could not save settings.', true);
+      showToast(result.data.error || 'Could not save settings.', true);
       return;
     }
 
-    showAdminFeedback('Global rules saved.');
+    showToast('Grace periods saved.');
   });
 
   document.getElementById('notifications-form').addEventListener('submit', async (e) => {
@@ -289,11 +307,11 @@ function wireEventHandlers() {
     if (!result) return;
 
     if (!result.res.ok) {
-      showAdminFeedback(result.data.error || 'Could not save email settings.', true);
+      showToast(result.data.error || 'Could not save email settings.', true);
       return;
     }
 
-    showAdminFeedback('Email settings saved.');
+    showToast('Email settings saved.');
   });
 
   document.getElementById('add-shift').addEventListener('click', async () => {
@@ -312,7 +330,7 @@ function wireEventHandlers() {
     if (!result) return;
 
     if (!result.res.ok) {
-      showAdminFeedback(result.data.error || 'Could not add shift.', true);
+      showToast(result.data.error || 'Could not add shift.', true);
       return;
     }
 
@@ -321,7 +339,7 @@ function wireEventHandlers() {
     document.getElementById('new-shift-active').checked = true;
 
     await loadShifts(activeTeam);
-    showAdminFeedback('Shift added.');
+    showToast('Shift added.');
   });
 
   document.getElementById('add-person').addEventListener('click', async () => {
@@ -338,13 +356,13 @@ function wireEventHandlers() {
     if (!result) return;
 
     if (!result.res.ok) {
-      showAdminFeedback(result.data.error || 'Could not add person.', true);
+      showToast(result.data.error || 'Could not add person.', true);
       return;
     }
 
     nameInput.value = '';
     await loadPeople();
-    showAdminFeedback('Person added.');
+    showToast('Person added.');
   });
 
   document.getElementById('download-log').addEventListener('click', async () => {
@@ -356,7 +374,7 @@ function wireEventHandlers() {
     }
 
     if (!res.ok) {
-      showAdminFeedback('Could not download log.', true);
+      showToast('Could not download log.', true);
       return;
     }
 
@@ -381,6 +399,7 @@ function wireEventHandlers() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+  wireCollapsibles();
   wireEventHandlers();
 
   const ok = await ensureAdminSession();
