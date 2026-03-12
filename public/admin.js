@@ -1,4 +1,3 @@
-//Admin Page Logic
 async function loadPeople() {
   const res = await fetch('/admin/people');
   const people = await res.json();
@@ -6,30 +5,37 @@ async function loadPeople() {
   const list = document.getElementById('people-list');
   list.innerHTML = '';
 
-  people.forEach(p => {
+  people.forEach((p) => {
     if (!p.active) return;
 
     const li = document.createElement('li');
-    li.textContent = p.name;
+    li.className = 'people-list-item';
+
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = p.name;
+    nameSpan.className = 'person-name';
 
     const btn = document.createElement('button');
     btn.textContent = 'Remove';
+    btn.type = 'button';
+    btn.className = 'remove-btn';
 
     btn.onclick = async () => {
       await fetch('/admin/people/' + p.id, {
         method: 'DELETE'
       });
-
       loadPeople();
     };
 
+    li.appendChild(nameSpan);
     li.appendChild(btn);
     list.appendChild(li);
   });
 }
 
 document.getElementById('add-person').onclick = async () => {
-  const name = document.getElementById('new-name').value;
+  const nameInput = document.getElementById('new-name');
+  const name = nameInput.value.trim();
 
   if (!name) return;
 
@@ -41,7 +47,7 @@ document.getElementById('add-person').onclick = async () => {
     body: JSON.stringify({ name })
   });
 
-  document.getElementById('new-name').value = '';
+  nameInput.value = '';
   loadPeople();
 };
 
