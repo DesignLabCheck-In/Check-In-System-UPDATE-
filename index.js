@@ -303,6 +303,57 @@ setInterval(async () => {
   }
 }, 60 * 1000);
 
+// ---------- ADMIN API ----------
+
+// get people list
+app.get('/admin/people', async (_req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT id, name, active FROM people ORDER BY name ASC'
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('admin people error:', err);
+    res.status(500).json({ error: 'DB error' });
+  }
+});
+
+// add person
+app.post('/admin/people', async (req, res) => {
+  const { name } = req.body;
+
+  if (!name) return res.status(400).json({ error: 'Name required' });
+
+  try {
+    await pool.query(
+      'INSERT INTO people(name) VALUES($1)',
+      [name]
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not add person' });
+  }
+});
+
+// deactivate person
+app.delete('/admin/people/:id', async (req, res) => {
+  const id = req.params.id;
+
+  try {
+    await pool.query(
+      'UPDATE people SET active = FALSE WHERE id=$1',
+      [id]
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not remove person' });
+  }
+});
+
 // ---------- Start ----------
 app.listen(PORT, () =>
   console.log(`🚀 Server running at http://localhost:${PORT}`)
