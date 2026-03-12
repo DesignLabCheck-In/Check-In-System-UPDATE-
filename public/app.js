@@ -1,7 +1,6 @@
 const form = document.getElementById('checkin-form');
 const nameSelect = document.getElementById('name-select');
 const teamSelect = document.getElementById('team-select');
-const checkinBtn = document.getElementById('checkin-btn');
 const checkoutBtn = document.getElementById('checkout-btn');
 
 const accessModal = document.getElementById('access-modal');
@@ -51,13 +50,11 @@ async function loadNames() {
 }
 
 async function verifySiteAccess(password) {
-  const res = await fetch('/access/login', {
+  return fetch('/access/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ password })
   });
-
-  return res;
 }
 
 async function submitAction(endpoint) {
@@ -171,9 +168,10 @@ adminSubmit.addEventListener('click', async () => {
   }
 
   try {
-    const auth = btoa(`admin:${password}`);
-    const res = await fetch('/download-log', {
-      headers: { Authorization: `Basic ${auth}` }
+    const res = await fetch('/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password })
     });
 
     if (!res.ok) {
@@ -181,21 +179,12 @@ adminSubmit.addEventListener('click', async () => {
       return;
     }
 
-    const blob = await res.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'checkins.csv';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    window.URL.revokeObjectURL(url);
-
     adminModal.style.display = 'none';
     adminPasswordInput.value = '';
+    window.location.href = '/admin.html';
   } catch (err) {
-    console.error('Admin download error:', err);
-    showFeedback('Could not download log.');
+    console.error('Admin login error:', err);
+    showFeedback('Could not open admin panel.');
   }
 });
 
