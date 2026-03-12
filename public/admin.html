@@ -16,134 +16,157 @@
       </div>
     </div>
 
-    <section class="admin-card">
-      <h2>Global Check-In Rules</h2>
-      <form id="settings-form" class="settings-form">
-        <div class="settings-grid">
-          <label class="settings-field">
-            <span>Early check-in window (minutes)</span>
-            <input id="early_checkin_minutes" type="number" min="0" class="admin-input" />
-          </label>
+    <section class="admin-card collapsible-card open">
+      <button class="collapse-toggle" type="button">
+        <span>Email Notifications</span>
+        <span class="collapse-icon">▾</span>
+      </button>
+      <div class="collapse-content">
+        <form id="notifications-form" class="settings-form">
+          <div class="settings-grid">
+            <label class="settings-field">
+              <span>Default recipients</span>
+              <textarea
+                id="default_recipients"
+                class="admin-textarea"
+                placeholder="email1@example.com, email2@example.com"
+              ></textarea>
+            </label>
 
-          <label class="settings-field">
-            <span>Late grace period (minutes)</span>
-            <input id="late_grace_minutes" type="number" min="0" class="admin-input" />
-          </label>
-        </div>
+            <label class="settings-field">
+              <span>Extra TT late recipients</span>
+              <textarea
+                id="tt_late_extra_recipients"
+                class="admin-textarea"
+                placeholder="extra@example.com"
+              ></textarea>
+            </label>
+          </div>
 
-        <div class="settings-actions">
-          <button type="submit">Save Global Rules</button>
-        </div>
-      </form>
-    </section>
+          <div class="toggle-grid">
+            <label class="checkbox-field">
+              <input id="send_late_emails" type="checkbox" />
+              <span>Send late check-in emails</span>
+            </label>
 
-    <section class="admin-card">
-      <h2>Email Notifications</h2>
-      <form id="notifications-form" class="settings-form">
-        <div class="settings-grid">
-          <label class="settings-field">
-            <span>Default recipients</span>
-            <textarea
-              id="default_recipients"
-              class="admin-textarea"
-              placeholder="email1@example.com, email2@example.com"
-            ></textarea>
-          </label>
+            <label class="checkbox-field">
+              <input id="send_checkout_emails" type="checkbox" />
+              <span>Send checkout emails</span>
+            </label>
 
-          <label class="settings-field">
-            <span>Extra TT late recipients</span>
-            <textarea
-              id="tt_late_extra_recipients"
-              class="admin-textarea"
-              placeholder="extra@example.com"
-            ></textarea>
-          </label>
-        </div>
+            <label class="checkbox-field">
+              <input id="send_reminder_emails" type="checkbox" />
+              <span>Send reminder emails</span>
+            </label>
+          </div>
 
-        <div class="toggle-grid">
-          <label class="checkbox-field">
-            <input id="send_late_emails" type="checkbox" />
-            <span>Send late check-in emails</span>
-          </label>
-
-          <label class="checkbox-field">
-            <input id="send_checkout_emails" type="checkbox" />
-            <span>Send checkout emails</span>
-          </label>
-
-          <label class="checkbox-field">
-            <input id="send_reminder_emails" type="checkbox" />
-            <span>Send reminder emails</span>
-          </label>
-        </div>
-
-        <div class="settings-actions">
-          <button type="submit">Save Email Settings</button>
-        </div>
-      </form>
-    </section>
-
-    <section class="admin-card">
-      <h2>Shift Schedule</h2>
-
-      <div class="team-tabs">
-        <button id="tab-DT" class="team-tab active" type="button">DreamTeam</button>
-        <button id="tab-TT" class="team-tab" type="button">TechTeam</button>
-      </div>
-
-      <div class="admin-shift-toolbar">
-        <label class="settings-field small">
-          <span>Day</span>
-          <select id="new-shift-weekday" class="admin-input">
-            <option value="1">Monday</option>
-            <option value="2">Tuesday</option>
-            <option value="3">Wednesday</option>
-            <option value="4">Thursday</option>
-            <option value="5">Friday</option>
-          </select>
-        </label>
-
-        <label class="settings-field small">
-          <span>Shift name</span>
-          <input
-            id="new-shift-name"
-            class="admin-input"
-            placeholder="Morning / Afternoon / Event Shift"
-          />
-        </label>
-
-        <label class="settings-field small">
-          <span>Start time</span>
-          <input id="new-shift-time" type="time" class="admin-input" />
-        </label>
-
-        <label class="checkbox-field">
-          <input id="new-shift-active" type="checkbox" checked />
-          <span>Enabled</span>
-        </label>
-
-        <div class="shift-toolbar-button-wrap">
-          <button id="add-shift" type="button">Add Shift</button>
-        </div>
-      </div>
-
-      <div id="shift-groups"></div>
-    </section>
-
-    <section class="admin-card">
-      <h2>Add Person</h2>
-      <div class="admin-add-row">
-        <input id="new-name" class="admin-input" placeholder="Full name" />
-        <button id="add-person" type="button">Add</button>
+          <div class="settings-actions">
+            <button type="submit">Save Email Settings</button>
+          </div>
+        </form>
       </div>
     </section>
 
-    <section class="admin-card">
-      <h2>Current People</h2>
-      <ul id="people-list" class="people-list"></ul>
+    <section class="admin-card collapsible-card open">
+      <button class="collapse-toggle" type="button">
+        <span>Check-In Grace Periods</span>
+        <span class="collapse-icon">▾</span>
+      </button>
+      <div class="collapse-content">
+        <form id="settings-form" class="settings-form">
+          <div class="settings-grid">
+            <label class="settings-field">
+              <span>Early check-in window (minutes)</span>
+              <input id="early_checkin_minutes" type="number" min="0" class="admin-input" />
+            </label>
+
+            <label class="settings-field">
+              <span>Late grace period (minutes)</span>
+              <input id="late_grace_minutes" type="number" min="0" class="admin-input" />
+            </label>
+
+            <label class="settings-field">
+              <span>No check-in reminder delay (minutes)</span>
+              <input id="no_checkin_reminder_minutes" type="number" min="0" class="admin-input" />
+            </label>
+          </div>
+
+          <div class="settings-actions">
+            <button type="submit">Save Grace Periods</button>
+          </div>
+        </form>
+      </div>
     </section>
 
-    <div id="admin-feedback" class="admin-feedback" style="display: none;"></div>
+    <section class="admin-card collapsible-card open">
+      <button class="collapse-toggle" type="button">
+        <span>Shift Schedule</span>
+        <span class="collapse-icon">▾</span>
+      </button>
+      <div class="collapse-content">
+        <div class="team-tabs">
+          <button id="tab-DT" class="team-tab active" type="button">DreamTeam</button>
+          <button id="tab-TT" class="team-tab" type="button">TechTeam</button>
+        </div>
+
+        <div class="admin-shift-toolbar">
+          <label class="settings-field small">
+            <span>Day</span>
+            <select id="new-shift-weekday" class="admin-input">
+              <option value="1">Monday</option>
+              <option value="2">Tuesday</option>
+              <option value="3">Wednesday</option>
+              <option value="4">Thursday</option>
+              <option value="5">Friday</option>
+            </select>
+          </label>
+
+          <label class="settings-field small">
+            <span>Shift name</span>
+            <input
+              id="new-shift-name"
+              class="admin-input"
+              placeholder="Morning / Afternoon / Event Shift"
+            />
+          </label>
+
+          <label class="settings-field small">
+            <span>Start time</span>
+            <input id="new-shift-time" type="time" class="admin-input" />
+          </label>
+
+          <label class="checkbox-field">
+            <input id="new-shift-active" type="checkbox" checked />
+            <span>Enabled</span>
+          </label>
+
+          <div class="shift-toolbar-button-wrap">
+            <button id="add-shift" type="button">Add Shift</button>
+          </div>
+        </div>
+
+        <div id="shift-groups"></div>
+      </div>
+    </section>
+
+    <section class="admin-card collapsible-card">
+      <button class="collapse-toggle" type="button">
+        <span>People</span>
+        <span class="collapse-icon">▾</span>
+      </button>
+      <div class="collapse-content">
+        <h3>Add Person</h3>
+        <div class="admin-add-row">
+          <input id="new-name" class="admin-input" placeholder="Full name" />
+          <button id="add-person" type="button">Add</button>
+        </div>
+
+        <h3 class="people-heading">Current People</h3>
+        <ul id="people-list" class="people-list"></ul>
+      </div>
+    </section>
+
+    <div id="admin-toast" class="admin-toast"></div>
   </div>
 
   <script src="admin.js" defer></script>
