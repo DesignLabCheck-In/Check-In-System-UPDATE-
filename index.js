@@ -96,7 +96,19 @@ function getShiftStart(now, team) {
 }
 
 // ---------- API ----------
+app.post('/access/login', (req, res) => {
+  const { password } = req.body || {};
 
+  if (!process.env.SITE_PASSWORD) {
+    return res.status(500).json({ error: 'SITE_PASSWORD is not configured' });
+  }
+
+  if (password !== process.env.SITE_PASSWORD) {
+    return res.status(401).json({ error: 'Invalid password' });
+  }
+
+  res.json({ success: true });
+});
 // Names list (dropdown) - now loaded from Neon
 app.get('/names', async (_req, res) => {
   try {
