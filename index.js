@@ -25,7 +25,8 @@ const WEEKDAY_NAMES = {
 
 const DEFAULT_SETTINGS = {
   early_checkin_minutes: '30',
-  late_grace_minutes: '10'
+  late_grace_minutes: '10',
+  no_checkin_reminder_minutes: '20'
 };
 
 const DEFAULT_NOTIFICATION_SETTINGS = {
@@ -201,8 +202,9 @@ async function getAppSettings() {
   }
 
   return {
-    early_checkin_minutes: Number(settings.early_checkin_minutes),
-    late_grace_minutes: Number(settings.late_grace_minutes)
+  early_checkin_minutes: Number(settings.early_checkin_minutes),
+  late_grace_minutes: Number(settings.late_grace_minutes),
+  no_checkin_reminder_minutes: Number(settings.no_checkin_reminder_minutes)
   };
 }
 
@@ -547,18 +549,24 @@ app.get('/admin/settings', requireAdmin, async (_req, res) => {
 });
 
 app.put('/admin/settings', requireAdmin, async (req, res) => {
-  const { early_checkin_minutes, late_grace_minutes } = req.body || {};
+  const {
+  early_checkin_minutes,
+  late_grace_minutes,
+  no_checkin_reminder_minutes
+  } = req.body || {};
 
   if (
-    Number.isNaN(Number(early_checkin_minutes)) || Number(early_checkin_minutes) < 0 ||
-    Number.isNaN(Number(late_grace_minutes)) || Number(late_grace_minutes) < 0
-  ) {
-    return res.status(400).json({ error: 'Grace values must be 0 or greater' });
-  }
+  Number.isNaN(Number(early_checkin_minutes)) || Number(early_checkin_minutes) < 0 ||
+  Number.isNaN(Number(late_grace_minutes)) || Number(late_grace_minutes) < 0 ||
+  Number.isNaN(Number(no_checkin_reminder_minutes)) || Number(no_checkin_reminder_minutes) < 0
+) {
+  return res.status(400).json({ error: 'All timing values must be 0 or greater' });
+}
 
   const updates = {
     early_checkin_minutes: String(early_checkin_minutes),
-    late_grace_minutes: String(late_grace_minutes)
+    late_grace_minutes: String(late_grace_minutes),
+    no_checkin_reminder_minutes: String(no_checkin_reminder_minutes)
   };
 
   try {
@@ -770,7 +778,7 @@ setInterval(async () => {
         const shiftStart = timeStringToDate(now, rule.start_time);
         const diffMins = Math.floor(now.diff(shiftStart, 'minutes').minutes);
 
-        if (diffMins === 20) {
+        if (diffMins === settings.no_checkin_reminder_minutes) {
           const { rowCount } = await pool.query(
             `
             SELECT 1
