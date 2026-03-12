@@ -421,3 +421,21 @@ button:hover {
     width: 100%;
   }
 }
+
+.admin-textarea {
+  width: 100%;
+  min-height: 96px;
+  box-sizing: border-box;
+  border-radius: 16px;
+  border: 1px solid #d0d0d0;
+  padding: 12px 14px;
+  font-size: 0.95rem;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.toggle-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
