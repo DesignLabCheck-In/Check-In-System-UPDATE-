@@ -439,3 +439,80 @@ button:hover {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 14px;
 }
+
+.collapsible-card .collapse-toggle {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: transparent;
+  color: #111;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  font-size: 1.15rem;
+  margin-bottom: 18px;
+}
+
+.collapsible-card .collapse-toggle:hover {
+  opacity: 1;
+}
+
+.collapse-icon {
+  font-size: 1.1rem;
+  transition: transform 0.2s ease;
+}
+
+.collapsible-card:not(.open) .collapse-icon {
+  transform: rotate(-90deg);
+}
+
+.collapse-content {
+  display: none;
+}
+
+.collapsible-card.open .collapse-content {
+  display: block;
+}
+
+.people-heading {
+  margin-top: 24px;
+}
+
+.admin-toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  background: #eaf7ee;
+  color: #1d6b31;
+  border: 1px solid #b9e2c5;
+  border-radius: 14px;
+  padding: 14px 18px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  opacity: 0;
+  transform: translateY(10px);
+  pointer-events: none;
+  transition: opacity 0.22s ease, transform 0.22s ease;
+  z-index: 2000;
+  max-width: 340px;
+}
+
+.admin-toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.admin-toast.error {
+  background: #fdecec;
+  color: #9f2d2d;
+  border-color: #f2bcbc;
+}
+
+@media (max-width: 600px) {
+  .admin-toast {
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    max-width: none;
+  }
+}
