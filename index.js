@@ -20,7 +20,8 @@ app.get('/', (_req, res) => res.sendFile(path.join(STATIC_DIR, 'index.html')));
 
 // ---------- Email ----------
 const EMAIL_TO =
-  'p.vuckovic@student.utwente.nl, a.krstovska@student.utwente.nl, n.j.wright@utwente.nl';
+  //'p.vuckovic@student.utwente.nl, a.krstovska@student.utwente.nl, n.j.wright@utwente.nl';
+  'xiborui@gmail.com';
 
 const EXTRA_TT_LATE_EMAIL = 'j.blok@utwente.nl';
 
