@@ -38,6 +38,44 @@
     </section>
 
     <section class="admin-card">
+      <h2>Email Notifications</h2>
+      <form id="notifications-form" class="settings-form">
+        <div class="settings-grid">
+          <label class="settings-field">
+            <span>Default recipients</span>
+            <textarea id="default_recipients" class="admin-textarea" placeholder="email1@example.com, email2@example.com"></textarea>
+          </label>
+
+          <label class="settings-field">
+            <span>Extra TT late recipients</span>
+            <textarea id="tt_late_extra_recipients" class="admin-textarea" placeholder="extra@example.com"></textarea>
+          </label>
+        </div>
+
+        <div class="toggle-grid">
+          <label class="checkbox-field">
+            <input id="send_late_emails" type="checkbox" />
+            <span>Send late check-in emails</span>
+          </label>
+
+          <label class="checkbox-field">
+            <input id="send_checkout_emails" type="checkbox" />
+            <span>Send checkout emails</span>
+          </label>
+
+          <label class="checkbox-field">
+            <input id="send_reminder_emails" type="checkbox" />
+            <span>Send reminder emails</span>
+          </label>
+        </div>
+
+        <div class="settings-actions">
+          <button type="submit">Save Email Settings</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="admin-card">
       <h2>Shift Schedule</h2>
 
       <div class="team-tabs">
@@ -54,8 +92,6 @@
             <option value="3">Wednesday</option>
             <option value="4">Thursday</option>
             <option value="5">Friday</option>
-            <option value="6">Saturday</option>
-            <option value="7">Sunday</option>
           </select>
         </label>
 
@@ -69,9 +105,9 @@
           <input id="new-shift-time" type="time" class="admin-input" />
         </label>
 
-        <label class="settings-field checkbox-field">
-          <span>Enabled</span>
+        <label class="checkbox-field">
           <input id="new-shift-active" type="checkbox" checked />
+          <span>Enabled</span>
         </label>
 
         <div class="shift-toolbar-button-wrap">
