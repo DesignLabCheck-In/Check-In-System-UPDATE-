@@ -1,13 +1,7 @@
-@font-face {
-  font-family: sans-serif;
-  font-weight: bold;
-  font-style: normal;
-}
-
 html, body {
   margin: 0;
   padding: 0;
-  font-family: 'UniverseBoldCondensed', sans-serif;
+  font-family: sans-serif;
   background: white;
   height: 100%;
   width: 100%;
@@ -40,7 +34,10 @@ body {
   line-height: 1.1;
 }
 
-.logo { max-height: 20vh; width: auto; }
+.logo {
+  max-height: 20vh;
+  width: auto;
+}
 
 .checkin-form {
   display: flex;
@@ -80,15 +77,19 @@ button {
   white-space: nowrap;
 }
 
-.btn-gray { background-color: #aaa; }
+.btn-gray {
+  background-color: #aaa;
+}
 
-/* Inverse style for Check-Out: white bg, green outline/text */
 .btn-outline-green {
   background: #ffffff;
   color: #2eaf4a;
   border: 2px solid #2eaf4a;
 }
-.btn-outline-green:hover { background: #f5fff9; }
+
+.btn-outline-green:hover {
+  background: #f5fff9;
+}
 
 .admin-btn {
   position: absolute;
@@ -115,7 +116,7 @@ button {
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  font-family: 'UniverseBoldCondensed', sans-serif;
+  font-family: sans-serif;
 }
 
 .modal-box {
@@ -134,11 +135,7 @@ button {
   margin-top: 1em;
   border-radius: 8px;
   border: 1px solid #ccc;
-}
-
-@media (max-width: 600px) {
-  .title { flex-direction: column; align-items: center; text-align: center; }
-  .checkin-form { flex-direction: column; gap: 1em; }
+  box-sizing: border-box;
 }
 
 /* ---------- Admin page ---------- */
@@ -155,10 +152,24 @@ button {
   padding: 0 20px 40px;
 }
 
-.admin-container h1 {
-  text-align: center;
-  margin-bottom: 30px;
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.admin-header h1 {
+  margin: 0;
   color: #111;
+}
+
+.admin-header-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .admin-card {
@@ -226,6 +237,17 @@ button {
 }
 
 @media (max-width: 600px) {
+  .title {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .checkin-form {
+    flex-direction: column;
+    gap: 1em;
+  }
+
   .people-list-item {
     flex-direction: column;
     align-items: stretch;
