@@ -28,9 +28,13 @@ const DEFAULT_SETTINGS = {
   late_grace_minutes: '10'
 };
 
-const EMAIL_TO =
-  'p.vuckovic@student.utwente.nl, a.krstovska@student.utwente.nl, n.j.wright@utwente.nl';
-const EXTRA_TT_LATE_EMAIL = 'j.blok@utwente.nl';
+const DEFAULT_NOTIFICATION_SETTINGS = {
+  default_recipients: 'p.vuckovic@student.utwente.nl, a.krstovska@student.utwente.nl, n.j.wright@utwente.nl',
+  tt_late_extra_recipients: 'j.blok@utwente.nl',
+  send_late_emails: 'true',
+  send_checkout_emails: 'true',
+  send_reminder_emails: 'true'
+};
 
 const adminSessions = new Map();
 
@@ -100,6 +104,13 @@ async function dbInit() {
   `);
 
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS notification_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    );
+  `);
+
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS shift_rules (
       id SERIAL PRIMARY KEY,
       team TEXT NOT NULL,
@@ -119,6 +130,17 @@ async function dbInit() {
     await pool.query(
       `
       INSERT INTO app_settings (key, value)
+      VALUES ($1, $2)
+      ON CONFLICT (key) DO NOTHING
+      `,
+      [key, value]
+    );
+  }
+
+  for (const [key, value] of Object.entries(DEFAULT_NOTIFICATION_SETTINGS)) {
+    await pool.query(
+      `
+      INSERT INTO notification_settings (key, value)
       VALUES ($1, $2)
       ON CONFLICT (key) DO NOTHING
       `,
@@ -184,6 +206,32 @@ async function getAppSettings() {
   };
 }
 
+async function getNotificationSettings() {
+  const { rows } = await pool.query('SELECT key, value FROM notification_settings');
+  const settings = { ...DEFAULT_NOTIFICATION_SETTINGS };
+
+  for (const row of rows) {
+    settings[row.key] = row.value;
+  }
+
+  return {
+    default_recipients: settings.default_recipients,
+    tt_late_extra_recipients: settings.tt_late_extra_recipients,
+    send_late_emails: settings.send_late_emails === 'true',
+    send_checkout_emails: settings.send_checkout_emails === 'true',
+    send_reminder_emails: settings.send_reminder_emails === 'true'
+  };
+}
+
+function combineRecipients(...groups) {
+  const parts = groups
+    .flatMap(group => String(group || '').split(','))
+    .map(v => v.trim())
+    .filter(Boolean);
+
+  return [...new Set(parts)].join(', ');
+}
+
 function timeStringToDate(now, hhmm) {
   const [hour, minute] = hhmm.split(':').map(Number);
   return now.set({ hour, minute, second: 0, millisecond: 0 });
@@ -202,8 +250,8 @@ function findRelevantShiftRule(now, rules, earlyCheckinMinutes) {
   }));
 
   const candidate = withTimes.find(rule =>
-    now >= rule.start.minus({ minutes: earlyCheckinMinutes })
-      && now <= rule.start.plus({ hours: 8 })
+    now >= rule.start.minus({ minutes: earlyCheckinMinutes }) &&
+    now <= rule.start.plus({ hours: 8 })
   );
 
   if (candidate) return candidate;
@@ -325,6 +373,14 @@ app.post('/checkin', async (req, res) => {
 
     const rules = await getShiftRulesForDay(team, now.weekday);
     if (!rules.length) {
+      if (isWeekend) {
+        return res.json({
+          success: true,
+          status: 'checkin-weekend',
+          shift_name: null
+        });
+      }
+
       return res.status(400).json({
         error: `No active shifts configured for ${team} on ${WEEKDAY_NAMES[now.weekday]}`
       });
@@ -362,29 +418,28 @@ app.post('/checkin', async (req, res) => {
       [name, team, status, selectedRule.shift_name, now.toISO()]
     );
 
-    if (status === 'checkin-weekend') {
-      const dayName = now.toFormat('cccc');
-      await transporter.sendMail({
-        from: process.env.MAIL_USER,
-        to: EMAIL_TO,
-        subject: `[${team}] ${name} has just checked in on ${dayName}!`,
-        text: `${name} submitted a weekend check-in for ${selectedRule.shift_name} on ${dayName}, ${now.toFormat('HH:mm')}.`
-      });
-      return res.json({ success: true, status, shift_name: selectedRule.shift_name });
-    }
-
     if (status === 'checkin-late') {
-      const diffMins = Math.floor(now.diff(shiftStart, 'minutes').minutes);
-      const recipients = team === 'TT'
-        ? `${EMAIL_TO}, ${EXTRA_TT_LATE_EMAIL}`
-        : EMAIL_TO;
+      const notifications = await getNotificationSettings();
 
-      await transporter.sendMail({
-        from: process.env.MAIL_USER,
-        to: recipients,
-        subject: `[${team}] ${name} has checked in late for ${selectedRule.shift_name} (${now.toFormat('HH:mm')})`,
-        text: `${name} checked in at ${now.toFormat('HH:mm')} for shift "${selectedRule.shift_name}", which is ${diffMins} minutes after shift start.`
-      });
+      if (notifications.send_late_emails) {
+        const recipients = team === 'TT'
+          ? combineRecipients(
+              notifications.default_recipients,
+              notifications.tt_late_extra_recipients
+            )
+          : notifications.default_recipients;
+
+        if (recipients) {
+          const diffMins = Math.floor(now.diff(shiftStart, 'minutes').minutes);
+
+          await transporter.sendMail({
+            from: process.env.MAIL_USER,
+            to: recipients,
+            subject: `[${team}] ${name} has checked in late for ${selectedRule.shift_name} (${now.toFormat('HH:mm')})`,
+            text: `${name} checked in at ${now.toFormat('HH:mm')} for shift "${selectedRule.shift_name}", which is ${diffMins} minutes after shift start.`
+          });
+        }
+      }
     }
 
     res.json({
@@ -416,12 +471,16 @@ app.post('/checkout', async (req, res) => {
       [name, team, 'checkout', null, now.toISO()]
     );
 
-    await transporter.sendMail({
-      from: process.env.MAIL_USER,
-      to: EMAIL_TO,
-      subject: `${name} checked out (${team})`,
-      text: `${name} has checked out from ${team} at ${localTime}.`
-    });
+    const notifications = await getNotificationSettings();
+
+    if (notifications.send_checkout_emails && notifications.default_recipients) {
+      await transporter.sendMail({
+        from: process.env.MAIL_USER,
+        to: notifications.default_recipients,
+        subject: `${name} checked out (${team})`,
+        text: `${name} has checked out from ${team} at ${localTime}.`
+      });
+    }
 
     res.json({ success: true, at: localTime });
   } catch (e) {
@@ -522,6 +581,53 @@ app.put('/admin/settings', requireAdmin, async (req, res) => {
   }
 });
 
+app.get('/admin/notifications', requireAdmin, async (_req, res) => {
+  try {
+    const settings = await getNotificationSettings();
+    res.json(settings);
+  } catch (err) {
+    console.error('notification load error:', err);
+    res.status(500).json({ error: 'Could not load notification settings' });
+  }
+});
+
+app.put('/admin/notifications', requireAdmin, async (req, res) => {
+  const {
+    default_recipients,
+    tt_late_extra_recipients,
+    send_late_emails,
+    send_checkout_emails,
+    send_reminder_emails
+  } = req.body || {};
+
+  const updates = {
+    default_recipients: String(default_recipients || '').trim(),
+    tt_late_extra_recipients: String(tt_late_extra_recipients || '').trim(),
+    send_late_emails: String(Boolean(send_late_emails)),
+    send_checkout_emails: String(Boolean(send_checkout_emails)),
+    send_reminder_emails: String(Boolean(send_reminder_emails))
+  };
+
+  try {
+    for (const [key, value] of Object.entries(updates)) {
+      await pool.query(
+        `
+        INSERT INTO notification_settings (key, value)
+        VALUES ($1, $2)
+        ON CONFLICT (key)
+        DO UPDATE SET value = EXCLUDED.value
+        `,
+        [key, value]
+      );
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('notification save error:', err);
+    res.status(500).json({ error: 'Could not save notification settings' });
+  }
+});
+
 app.get('/admin/shifts', requireAdmin, async (req, res) => {
   const team = req.query.team;
   if (!team || !['DT', 'TT'].includes(team)) {
@@ -552,8 +658,8 @@ app.post('/admin/shifts', requireAdmin, async (req, res) => {
   if (!['DT', 'TT'].includes(team)) {
     return res.status(400).json({ error: 'Valid team is required' });
   }
-  if (![1, 2, 3, 4, 5, 6, 7].includes(Number(weekday))) {
-    return res.status(400).json({ error: 'Weekday must be 1-7' });
+  if (![1, 2, 3, 4, 5].includes(Number(weekday))) {
+    return res.status(400).json({ error: 'Weekday must be 1-5' });
   }
   if (!shift_name || typeof shift_name !== 'string') {
     return res.status(400).json({ error: 'Shift name is required' });
@@ -651,6 +757,9 @@ setInterval(async () => {
     const now = DateTime.now().setZone('Europe/Amsterdam');
     if (now.weekday >= 6) return;
 
+    const notifications = await getNotificationSettings();
+    if (!notifications.send_reminder_emails || !notifications.default_recipients) return;
+
     const settings = await getAppSettings();
 
     for (const team of ['DT', 'TT']) {
@@ -687,7 +796,7 @@ setInterval(async () => {
 
               await transporter.sendMail({
                 from: process.env.MAIL_USER,
-                to: EMAIL_TO,
+                to: notifications.default_recipients,
                 subject: `No ${team} check-in yet for ${rule.shift_name} (${WEEKDAY_NAMES[now.weekday]})`,
                 text: `As of ${now.toFormat('HH:mm')} nobody has checked in for ${team} shift "${rule.shift_name}".`
               });
