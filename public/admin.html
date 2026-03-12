@@ -1,4 +1,40 @@
-v      </form>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Panel</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="admin-page">
+  <div class="admin-container">
+    <div class="admin-header">
+      <h1>Admin Panel</h1>
+      <div class="admin-header-actions">
+        <button id="download-log" type="button">Download Log</button>
+        <button id="admin-logout" type="button" class="btn-gray">Log out</button>
+      </div>
+    </div>
+
+    <section class="admin-card">
+      <h2>Global Check-In Rules</h2>
+      <form id="settings-form" class="settings-form">
+        <div class="settings-grid">
+          <label class="settings-field">
+            <span>Early check-in window (minutes)</span>
+            <input id="early_checkin_minutes" type="number" min="0" class="admin-input" />
+          </label>
+
+          <label class="settings-field">
+            <span>Late grace period (minutes)</span>
+            <input id="late_grace_minutes" type="number" min="0" class="admin-input" />
+          </label>
+        </div>
+
+        <div class="settings-actions">
+          <button type="submit">Save Global Rules</button>
+        </div>
+      </form>
     </section>
 
     <section class="admin-card">
@@ -7,12 +43,20 @@ v      </form>
         <div class="settings-grid">
           <label class="settings-field">
             <span>Default recipients</span>
-            <textarea id="default_recipients" class="admin-textarea" placeholder="email1@example.com, email2@example.com"></textarea>
+            <textarea
+              id="default_recipients"
+              class="admin-textarea"
+              placeholder="email1@example.com, email2@example.com"
+            ></textarea>
           </label>
 
           <label class="settings-field">
             <span>Extra TT late recipients</span>
-            <textarea id="tt_late_extra_recipients" class="admin-textarea" placeholder="extra@example.com"></textarea>
+            <textarea
+              id="tt_late_extra_recipients"
+              class="admin-textarea"
+              placeholder="extra@example.com"
+            ></textarea>
           </label>
         </div>
 
@@ -43,8 +87,8 @@ v      </form>
       <h2>Shift Schedule</h2>
 
       <div class="team-tabs">
-        <button id="tab-DT" class="team-tab active" type="button" data-team="DT">DreamTeam</button>
-        <button id="tab-TT" class="team-tab" type="button" data-team="TT">TechTeam</button>
+        <button id="tab-DT" class="team-tab active" type="button">DreamTeam</button>
+        <button id="tab-TT" class="team-tab" type="button">TechTeam</button>
       </div>
 
       <div class="admin-shift-toolbar">
@@ -61,7 +105,11 @@ v      </form>
 
         <label class="settings-field small">
           <span>Shift name</span>
-          <input id="new-shift-name" class="admin-input" placeholder="Morning / Afternoon / Event Shift" />
+          <input
+            id="new-shift-name"
+            class="admin-input"
+            placeholder="Morning / Afternoon / Event Shift"
+          />
         </label>
 
         <label class="settings-field small">
@@ -98,6 +146,6 @@ v      </form>
     <div id="admin-feedback" class="admin-feedback" style="display: none;"></div>
   </div>
 
-  <script src="admin.js"></script>
+  <script src="admin.js" defer></script>
 </body>
 </html>
