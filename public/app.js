@@ -86,18 +86,18 @@ async function submitAction(endpoint) {
       return;
     }
 
+    const shiftText = data.shift_name ? ` for "${data.shift_name}"` : '';
+
     if (data.status === 'checkin-ontime') {
       showFeedback(`🎉 Checked in successfully${shiftText}!`);
       launchConfetti();
-    } 
-    else if (data.status === 'checkin-late') {
+    } else if (data.status === 'checkin-late') {
       showFeedback(`🚨 Oh oh... you checked in too late${shiftText}. Please contact the coordinators.`);
-    } 
-    else if (data.status === 'checkin-weekend') {
-      showFeedback(`😉 It is weekend! No need to check in.`);
+    } else if (data.status === 'checkin-weekend') {
+      showFeedback('😉 It is weekend! No need to check in.');
     } else {
-          showFeedback('Check-in successful.');
-        }
+      showFeedback(`Check-in successful${shiftText}.`);
+    }
 
     form.reset();
   } catch (err) {
@@ -201,12 +201,12 @@ function launchConfetti() {
   const count = 80;
 
   for (let i = 0; i < count; i++) {
-    const confetti = document.createElement("div");
-    confetti.className = "confetti";
+    const confetti = document.createElement('div');
+    confetti.className = 'confetti';
 
-    confetti.style.left = Math.random() * 100 + "vw";
-    confetti.style.backgroundColor = `hsl(${Math.random()*360},70%,60%)`;
-    confetti.style.animationDuration = (Math.random() * 2 + 2) + "s";
+    confetti.style.left = Math.random() * 100 + 'vw';
+    confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 70%, 60%)`;
+    confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
 
     document.body.appendChild(confetti);
 
