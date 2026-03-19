@@ -13,6 +13,7 @@ const PORT = process.env.PORT || 3000;
 
 const STATIC_DIR = path.join(__dirname, 'public');
 const ADMIN_COOKIE_NAME = 'designlab_admin_session';
+
 const WEEKDAY_NAMES = {
   1: 'Monday',
   2: 'Tuesday',
@@ -202,9 +203,9 @@ async function getAppSettings() {
   }
 
   return {
-  early_checkin_minutes: Number(settings.early_checkin_minutes),
-  late_grace_minutes: Number(settings.late_grace_minutes),
-  no_checkin_reminder_minutes: Number(settings.no_checkin_reminder_minutes)
+    early_checkin_minutes: Number(settings.early_checkin_minutes),
+    late_grace_minutes: Number(settings.late_grace_minutes),
+    no_checkin_reminder_minutes: Number(settings.no_checkin_reminder_minutes)
   };
 }
 
@@ -243,25 +244,29 @@ function sortRulesByTime(rules) {
   return [...rules].sort((a, b) => a.start_time.localeCompare(b.start_time));
 }
 
+/**
+ * Pick the latest shift whose early check-in window has opened.
+ * If none are open yet, return the first shift of the day.
+ */
 function findRelevantShiftRule(now, rules, earlyCheckinMinutes) {
   if (!rules.length) return null;
 
-  const withTimes = sortRulesByTime(rules).map(rule => ({
-    ...rule,
-    start: timeStringToDate(now, rule.start_time)
-  }));
+  const withTimes = sortRulesByTime(rules).map(rule => {
+    const start = timeStringToDate(now, rule.start_time);
+    return {
+      ...rule,
+      start,
+      earlyStart: start.minus({ minutes: earlyCheckinMinutes })
+    };
+  });
 
-  const candidate = withTimes.find(rule =>
-    now >= rule.start.minus({ minutes: earlyCheckinMinutes }) &&
-    now <= rule.start.plus({ hours: 8 })
-  );
+  const opened = withTimes.filter(rule => now >= rule.earlyStart);
 
-  if (candidate) return candidate;
+  if (opened.length > 0) {
+    return opened[opened.length - 1];
+  }
 
-  const future = withTimes.find(rule => now < rule.start);
-  if (future) return future;
-
-  return withTimes[withTimes.length - 1];
+  return withTimes[0];
 }
 
 async function getShiftRulesForDay(team, weekday) {
@@ -374,6 +379,7 @@ app.post('/checkin', async (req, res) => {
     const settings = await getAppSettings();
 
     const rules = await getShiftRulesForDay(team, now.weekday);
+
     if (!rules.length) {
       if (isWeekend) {
         return res.json({
@@ -401,15 +407,16 @@ app.post('/checkin', async (req, res) => {
 
     if (isWeekend) {
       status = 'checkin-weekend';
+    } else if (now < earlyWindowStart) {
+      return res.status(400).json({
+        error: `Too early to check in for "${selectedRule.shift_name}". Check-in opens at ${earlyWindowStart.toFormat('HH:mm')}.`
+      });
     } else if (now >= earlyWindowStart && now < shiftStart) {
       status = 'checkin-ontime';
     } else if (now >= shiftStart && now <= lateThreshold) {
       status = 'checkin-ontime';
-    } else if (now > lateThreshold) {
-      status = 'checkin-late';
     } else {
-      const diffMins = Math.floor(now.diff(shiftStart, 'minutes').minutes);
-      status = diffMins <= settings.late_grace_minutes ? 'checkin-ontime' : 'checkin-late';
+      status = 'checkin-late';
     }
 
     await pool.query(
@@ -550,18 +557,18 @@ app.get('/admin/settings', requireAdmin, async (_req, res) => {
 
 app.put('/admin/settings', requireAdmin, async (req, res) => {
   const {
-  early_checkin_minutes,
-  late_grace_minutes,
-  no_checkin_reminder_minutes
+    early_checkin_minutes,
+    late_grace_minutes,
+    no_checkin_reminder_minutes
   } = req.body || {};
 
   if (
-  Number.isNaN(Number(early_checkin_minutes)) || Number(early_checkin_minutes) < 0 ||
-  Number.isNaN(Number(late_grace_minutes)) || Number(late_grace_minutes) < 0 ||
-  Number.isNaN(Number(no_checkin_reminder_minutes)) || Number(no_checkin_reminder_minutes) < 0
-) {
-  return res.status(400).json({ error: 'All timing values must be 0 or greater' });
-}
+    Number.isNaN(Number(early_checkin_minutes)) || Number(early_checkin_minutes) < 0 ||
+    Number.isNaN(Number(late_grace_minutes)) || Number(late_grace_minutes) < 0 ||
+    Number.isNaN(Number(no_checkin_reminder_minutes)) || Number(no_checkin_reminder_minutes) < 0
+  ) {
+    return res.status(400).json({ error: 'All timing values must be 0 or greater' });
+  }
 
   const updates = {
     early_checkin_minutes: String(early_checkin_minutes),
@@ -817,8 +824,6 @@ setInterval(async () => {
         }
       }
     }
-
-    void settings;
   } catch (e) {
     console.error('❌ reminder loop error:', e);
   }
