@@ -63,7 +63,11 @@ transporter.verify(err => {
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
+  ssl: { rejectUnauthorized: false },
+  max: 2,
+  idleTimeoutMillis: 5000,
+  connectionTimeoutMillis: 10000,
+  allowExitOnIdle: true
 });
 
 async function dbInit() {
@@ -286,8 +290,7 @@ async function getShiftRulesForDay(team, weekday) {
 }
 
 dbInit().catch(err => {
-  console.error('❌ DB init error:', err);
-  process.exit(1);
+  console.error('❌ DB init error:', err.message || err);
 });
 
 app.post('/access/login', (req, res) => {
@@ -767,6 +770,7 @@ app.get('/download-log', requireAdmin, async (_req, res) => {
   }
 });
 
+/* CHECKING EVERY MINUTE LOOP
 setInterval(async () => {
   try {
     const now = DateTime.now().setZone('Europe/Amsterdam');
@@ -827,7 +831,7 @@ setInterval(async () => {
   } catch (e) {
     console.error('❌ reminder loop error:', e);
   }
-}, 60 * 1000);
+}, 60 * 1000); */
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
